@@ -4,7 +4,7 @@ A zero-install, browser-based tool designed to solve a simple problem: **How to 
 
 It transforms your monitor into a pure black void (perfect for overnight processing) or a customizable digital billboard for temporary "Away" messages.
 
-**[👉 Click here to use the App](https://your-username.github.io/screen-canvas/)**
+**👉 [Click here to use the App](https://your-username.github.io/screen-canvas/)**
 
 ---
 
