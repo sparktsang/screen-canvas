@@ -4,7 +4,7 @@ A zero-install, browser-based tool designed to solve a simple problem: **How to 
 
 It transforms your monitor into a pure black void (perfect for overnight processing) or a customizable digital billboard for temporary "Away" messages.
 
-**👉 [Click here to use the App](https://your-username.github.io/screen-canvas/)**
+**👉 [Click here to use the App](https://sparktsang.github.io/screen-canvas/)**
 
 ---
 
@@ -39,7 +39,7 @@ Need to leave a message?
 
 ## 🚀 How to Use
 
-1.  Open the [App Link](https://your-username.github.io/screen-canvas/).
+1.  Open the [App Link](https://sparktsang.github.io/screen-canvas/).
 2.  **For Blackout:** Do nothing. The menu will vanish in 1.5 seconds.
 3.  **For Billboard:**
     *   Type your message in the text box.
