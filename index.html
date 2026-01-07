@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackout Board</title>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --ui-bg: rgba(255, 255, 255, 0.95);
+            --ui-border: #444;
+            --ui-text: #333;
+        }
+
+        /* Dark Mode UI */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ui-bg: rgba(30, 30, 30, 0.95);
+                --ui-border: #555;
+                --ui-text: #eee;
+            }
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000;
+        }
+
+        /* The Main Display Area - Flexbox Centering */
+        #display-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            color: #ffffff;
+            display: flex;
+            align-items: center;       /* Vertical Center */
+            justify-content: center;   /* Horizontal Center */
+            text-align: center;
+            z-index: 0;
+            padding: 2vw;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        /* Content Wrapper - Keeps text together */
+        #content-wrapper {
+            font-size: 10vw;
+            line-height: 1.2;
+            word-wrap: break-word;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* Reset margins inside markdown to ensure perfect centering */
+        #content-wrapper > * { margin: 0.2em 0; }
+
+        /* Controls Panel */
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background: var(--ui-bg);
+            color: var(--ui-text);
+            border: 1px solid var(--ui-border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+            transform: translateY(0);
+            cursor: default;
+            box-sizing: border-box; 
+        }
+
+        #controls.hidden {
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+        }
+
+        h2 { margin-top: 0; font-size: 1.1rem; margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        /* Alignment Fixes */
+        input[type="color"], textarea, button {
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 6px;
+        }
+
+        input[type="color"] {
+            height: 40px;
+            border: 1px solid var(--ui-border);
+            padding: 2px;
+            background: none;
+            cursor: pointer;
+        }
+
+        textarea {
+            height: 100px;
+            padding: 10px;
+            border: 1px solid var(--ui-border);
+            background: rgba(255,255,255,0.1);
+            color: inherit;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            background: #2563eb;
+            color: #fff;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        .hint {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Main Fullscreen Display -->
+    <div id="display-area">
+        <div id="content-wrapper"></div>
+    </div>
+
+    <!-- Floating Settings Panel -->
+    <div id="controls">
+        <h2>Screen Controls</h2>
+        
+        <div class="form-group">
+            <label>Background Color</label>
+            <input type="color" id="bg-color" value="#000000">
+        </div>
+
+        <div class="form-group">
+            <label>Text Color</label>
+            <input type="color" id="text-color" value="#ffffff">
+        </div>
+
+        <div class="form-group">
+            <label>Message (Markdown / HTML)</label>
+            <textarea id="text-input" placeholder="Enter text here..."></textarea>
+        </div>
+
+        <button onclick="applyAndGo()">Apply & Full Screen</button>
+
+        <p class="hint">Move mouse or press any key to wake up.</p>
+    </div>
+
+    <script>
+        const controls = document.getElementById('controls');
+        const displayArea = document.getElementById('display-area');
+        const contentWrapper = document.getElementById('content-wrapper');
+        
+        let hideTimeout;
+        let isCooldown = false; // Prevents accidental wake-up right after clicking
+
+        // --- Core Action ---
+
+        function applyAndGo() {
+            // 1. Enter Full Screen
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            }
+
+            // 2. Apply Colors
+            const bgColor = document.getElementById('bg-color').value;
+            const textColor = document.getElementById('text-color').value;
+            displayArea.style.backgroundColor = bgColor;
+            displayArea.style.color = textColor;
+
+            // 3. Render Text (Original simple logic)
+            const rawText = document.getElementById('text-input').value;
+            
+            if (rawText.trim()) {
+                // Use marked.js to parse markdown normally
+                contentWrapper.innerHTML = marked.parse(rawText);
+                fitTextToScreen(); // Auto-resize text
+            } else {
+                contentWrapper.innerHTML = "";
+            }
+
+            // 4. Hide UI with Cooldown (The critical fix)
+            isCooldown = true;
+            hideUI();
+
+            setTimeout(() => {
+                isCooldown = false;
+            }, 500);
+        }
+
+        // --- Smart Text Resizing (Original Logic) ---
+        function fitTextToScreen() {
+            let fontSize = 10; // Reset
+            contentWrapper.style.fontSize = fontSize + 'vw';
+            
+            const maxH = window.innerHeight * 0.9;
+            const maxW = window.innerWidth * 0.9;
+
+            // Simple heuristic loop from original version
+            while (contentWrapper.clientHeight > maxH || contentWrapper.clientWidth > maxW) {
+                fontSize -= 0.5;
+                contentWrapper.style.fontSize = fontSize + 'vw';
+                if (fontSize < 1) break;
+            }
+        }
+
+        // --- Interaction Logic ---
+
+        function showUI() {
+            if (isCooldown) return;
+            
+            controls.classList.remove('hidden');
+            document.body.style.cursor = 'default';
+            resetIdleTimer();
+        }
+
+        function hideUI() {
+            controls.classList.add('hidden');
+            document.body.style.cursor = 'none';
+            document.activeElement.blur(); 
+        }
+
+        function resetIdleTimer() {
+            clearTimeout(hideTimeout);
+            if (document.activeElement !== document.getElementById('text-input')) {
+                hideTimeout = setTimeout(hideUI, 3000);
+            }
+        }
+
+        document.addEventListener('mousemove', showUI);
+        document.addEventListener('keydown', showUI);
+        document.addEventListener('click', (e) => {
+            if (isCooldown) return;
+
+            if (controls.classList.contains('hidden')) {
+                showUI();
+                return;
+            }
+
+            if (!controls.contains(e.target)) {
+                hideUI();
+            }
+        });
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (contentWrapper.innerHTML !== "") {
+                fitTextToScreen();
+            }
+        });
+
+        // Initialize defaults
+        const initBg = document.getElementById('bg-color').value;
+        const initText = document.getElementById('text-color').value;
+        displayArea.style.backgroundColor = initBg;
+        displayArea.style.color = initText;
+        
+        // Auto-hide controls initially
+        setTimeout(hideUI, 1500);
+
+    </script>
+</body>
+</html>
